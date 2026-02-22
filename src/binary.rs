@@ -26,7 +26,7 @@ fn to_ms(time: &str, uses_beats: bool, mspb: f64) -> u32 {
         // oops, all 4/4
         let measure: u32 = parts.next().expect("no measure").parse().expect("invalid measure");
         let beat: f64 = parts.next().expect("no beat").parse().expect("invalid beat");
-        let beats_into: f64 = (measure * 4) as f64 + beat + 1.0;
+        let beats_into: f64 = (measure * 4) as f64 + beat - 1.0;
 
         let ms = (beats_into * mspb) as u32;
         return adjust_ms(ms);
