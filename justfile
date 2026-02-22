@@ -1,3 +1,6 @@
 [default]
-build:
+dev:
     cargo build
+
+build:
+    cargo build --release

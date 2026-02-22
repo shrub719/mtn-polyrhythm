@@ -14,7 +14,5 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    println!("input: {:?}, output: {:?}", args.input, args.output);
-
-    Ok(())
+    binary::convert_map(args.input, args.output);
 }

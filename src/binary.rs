@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 use std::io::Write;
 
 fn adjust_ms(ms: u32) -> u32 {
@@ -11,58 +11,96 @@ fn adjust_ms(ms: u32) -> u32 {
     (ms as f64 * calc_ms_per_real_ms) as u32
 }
 
-fn convert_map(input: &str, output: &str) {
+fn get_field(metadata_line: &str) -> &str {
+    metadata_line.splitn(3, ' ').nth(2).unwrap()
+}
+
+fn bpm_to_mspb(bpm: f64) -> f64 {
+    1.0 / (bpm / 60_000.0)
+}
+
+fn to_ms(time: &str, uses_beats: bool, mspb: f64) -> u32 {
+    if uses_beats {
+        let mut parts = time.split(':');
+
+        // oops, all 4/4
+        let measure: u32 = parts.next().unwrap().parse().unwrap();
+        let beat: f64 = parts.next().unwrap().parse().unwrap();
+        let beats_into: f64 = (measure * 4) as f64 + beat;
+
+        let ms = (beats_into * mspb) as u32;
+        return adjust_ms(ms);
+    } else {
+        return adjust_ms(time.parse().unwrap())
+    }
+}
+
+fn pad_str(s: &str) -> Vec<u8> {
+    let mut buf = vec![b' '; 64];
+
+    let bytes = s.as_bytes();
+    let length = bytes.len().min(64-1);
+
+    buf[..length].copy_from_slice(&bytes[..length]);
+    buf[length] = 0;
+
+    buf
+}
+
+pub fn convert_map(input: PathBuf, output: PathBuf) {
     let txt = fs::read_to_string(input).unwrap();
     let mut bin = fs::File::create(output).unwrap();
+
+    let lines: Vec<&str> = txt.lines().collect();
+
+    let title = get_field(lines[0]);
+    let artist = get_field(lines[1]);
+    let id = get_field(lines[2]);
+    let bpm_field = get_field(lines[3]);
+
+    bin.write_all(&pad_str(title)).unwrap();
+    bin.write_all(&pad_str(artist)).unwrap();
+    bin.write_all(&pad_str(id)).unwrap();
+
+    let uses_beats = bpm_field != "ms";
+    let mut mspb: f64 = 0.0;
+    if uses_beats {
+        let bpm: f64 = bpm_field.parse().unwrap();
+        mspb = bpm_to_mspb(bpm);
+    }
     
-    for line in txt.lines() {
-        if line.starts_with('#') || line.trim().is_empty() {
+    for raw_line in &lines[4..] {
+        let line = raw_line.trim();
+
+        if line.starts_with('#') || line.is_empty() {
             continue
         }
 
         let mut parts = line.split_whitespace();
         let class = parts.next().unwrap();
-        let ms: u32 = adjust_ms(parts.next().unwrap().parse().unwrap());
-        let x: f32 = parts.next().unwrap().parse().unwrap();
+        let ms = to_ms(parts.next().unwrap(), uses_beats, mspb);
         
         match class {
             "t" => {
+                let x: f32 = parts.next().unwrap().parse().unwrap();
+
                 bin.write_all(b"t").unwrap();
                 bin.write_all(&ms.to_le_bytes()).unwrap();
                 bin.write_all(&x.to_le_bytes()).unwrap();
-                bin.write_all(b"pibi").unwrap();
+                bin.write_all(b"mtn ").unwrap();    // padding?
 
             },
             "h" => {
-                let ms_end: u32 = adjust_ms(parts.next().unwrap().parse().unwrap());
+                let x: f32 = parts.next().unwrap().parse().unwrap();
+                let ms_end = to_ms(parts.next().unwrap(), uses_beats, mspb);
 
                 bin.write_all(b"h").unwrap();
                 bin.write_all(&ms.to_le_bytes()).unwrap();
                 bin.write_all(&x.to_le_bytes()).unwrap();
                 bin.write_all(&ms_end.to_le_bytes()).unwrap();
             },
-            _ => ()
+            _ => panic!()
         };
-    }
-}
-
-fn convert_maps() {
-    let out_dir = "target/maps";
-    let in_dir = "assets/maps";
-    
-    fs::create_dir_all(out_dir).unwrap();
-
-    for entry in fs::read_dir(in_dir).unwrap() {
-        let path = entry.unwrap().path();
-
-        if path.extension().and_then(|s| s.to_str()) == Some("mtn") {
-            println!("cargo:rerun-if-changed={}", path.display());
-
-            let filename = path.file_stem().unwrap().to_str().unwrap();
-            let output = Path::new(&out_dir).join(format!("{filename}.mtb"));
-
-            convert_map(path.to_str().unwrap(), output.to_str().unwrap());
-        }
     }
 }
 
