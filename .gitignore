@@ -2,3 +2,4 @@ target/
 test/
 maps/
 mtb/
+output.mt*
