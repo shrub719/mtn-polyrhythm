@@ -11,6 +11,3 @@ test path:
     cargo run -- compile {{path}} -o ./test/output.mtb
     ./test/epsilon.bin --nwb ./test/libmetronome.so --nwb-external-data ./test/output.mtb
 
-run input output:
-    cargo run -- compile {{input}} -o {{output}}
-

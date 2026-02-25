@@ -44,11 +44,11 @@ fn main() {
         Compile { input, output }=> {
             compile::compile(input, output);
         },
-        Pack { input, output }=> {
+        Pack { input: _, output: _ }=> {
             todo!()
         },
         Osu { input, output } => {
-            todo!()
+            osu::osu(input, output);
         }
     }
 }
