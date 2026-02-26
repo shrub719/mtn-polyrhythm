@@ -6,6 +6,11 @@ fn get_field(metadata_line: &str) -> &str {
     metadata_line.split(':').nth(1).unwrap()
 }
 
+fn convert_osu_x(osu_x: f32, lanes: f32) -> f32 {
+    (osu_x * lanes / 512.0).floor()
+    / (lanes - 1.0)
+}
+
 pub fn osu(input: PathBuf, output: PathBuf) {
     let osu = fs::read_to_string(input).unwrap();
     let mut txt = fs::File::create(output).unwrap();
@@ -16,6 +21,11 @@ pub fn osu(input: PathBuf, output: PathBuf) {
         Some(index) => index + 1,
         None => panic!("no Metadata section in file")
     };
+
+    let lanes: f32 = match lines.iter().position(|l| l.starts_with("CircleSize")) {
+        Some(index) => lines[index].split(':').nth(1).expect("no CircleSize in file"),
+        None => panic!("no CircleSize in file")
+    }.parse().expect("invalid CircleSize");
 
     let title = get_field(lines[i+1]);
     let artist = get_field(lines[i+3]);
@@ -42,7 +52,7 @@ pub fn osu(input: PathBuf, output: PathBuf) {
         let _ = parts.next().expect("not enough note information");
         let ms_end: u32 = parts.next().expect("no note properties").split(':').nth(0).expect("no hold note end time").parse().expect("invalid hold note end time");
 
-        let x: f32 = osu_x / 512.0;
+        let x = convert_osu_x(osu_x, lanes);
         assert!(0.0 <= x && x <= 1.0, "note x out of range");
 
         match type_flags {
