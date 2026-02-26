@@ -47,6 +47,40 @@ fn pad_str(s: &str) -> Vec<u8> {
     buf
 }
 
+
+// r0, g0, b0 = (int(c) for c in input("r0 g0 b0: ").split())
+// r1, g1, b1 = (int(c) for c in input("r1 g1 b1: ").split())
+// 
+// n = int(input("n: "))
+// 
+// dr, dg, db = r1-r0, g1-g0, b1-b0
+// 
+// for i in range(n+1):
+//     t = i/n
+//     print(f"{r0 + t*dr} {g0 + t*dg} {b0 + t*db}")
+// 
+fn interpolate_colour(n: u16, c0: (u16, u16, u16), c1: (u16, u16, u16)) -> Vec<(u16, u16, u16)> {
+    let r0 = c0.0 as f32;
+    let g0 = c0.1 as f32;
+    let b0 = c0.2 as f32;
+
+    let dr = c1.0 as f32 - r0;
+    let dg = c1.1 as f32 - g0;
+    let db = c1.2 as f32 - b0;
+
+    let mut colours = Vec::new();
+    for i in 1..n+1 {
+        let t = i as f32 / n as f32;
+        colours.push((
+            (r0 + t * dr) as u16,
+            (g0 + t * dg) as u16,
+            (b0 + t * db) as u16
+        ));
+    }
+
+    colours
+}
+
 pub fn compile(input: PathBuf, output: PathBuf) {
     let txt = fs::read_to_string(input).unwrap();
     let mut bin = fs::File::create(output).unwrap();
@@ -111,7 +145,32 @@ pub fn compile(input: PathBuf, output: PathBuf) {
                 bin.write_all(&g.to_le_bytes()).unwrap();
                 bin.write_all(&b.to_le_bytes()).unwrap();
                 bin.write_all(b"  ").unwrap();      // padding
-            }
+            },
+            "e-fade" => {
+                let r0: u16 = parts.next().expect("no fade color r0").parse().expect("invalid fade color r0");
+                let g0: u16 = parts.next().expect("no fade color g0").parse().expect("invalid fade color g0");
+                let b0: u16 = parts.next().expect("no fade color b0").parse().expect("invalid fade color b0");
+
+                let r1: u16 = parts.next().expect("no fade color r1").parse().expect("invalid fade color r1");
+                let g1: u16 = parts.next().expect("no fade color g1").parse().expect("invalid fade color g1");
+                let b1: u16 = parts.next().expect("no fade color b1").parse().expect("invalid fade color b1");
+
+                let n: u16 = parts.next().expect("no fade n").parse().expect("invalid fade n");
+                let ms_end = to_ms(parts.next().expect("no fade end time"), uses_beats, mspb);
+
+                let dms = ((ms_end - ms) as f32 / n as f32) as u32;
+                let mut ms_i = ms + dms;
+                for (r, g, b) in interpolate_colour(n, (r0, g0, b0), (r1, b1, g1)) {
+                    bin.write_all(b"e").unwrap();
+                    bin.write_all(&ms_i.to_le_bytes()).unwrap();
+                    bin.write_all(&r.to_le_bytes()).unwrap();
+                    bin.write_all(&g.to_le_bytes()).unwrap();
+                    bin.write_all(&b.to_le_bytes()).unwrap();
+                    bin.write_all(b"  ").unwrap();      // padding
+                    
+                    ms_i += dms;
+                }
+            },
             other => panic!("/!\\ line {}: unsupported note type '{}'", i, other)
         };
 
