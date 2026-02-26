@@ -160,7 +160,7 @@ pub fn compile(input: PathBuf, output: PathBuf) {
 
                 let dms = ((ms_end - ms) as f32 / n as f32) as u32;
                 let mut ms_i = ms + dms;
-                for (r, g, b) in interpolate_colour(n, (r0, g0, b0), (r1, b1, g1)) {
+                for (r, g, b) in interpolate_colour(n, (r0, g0, b0), (r1, g1, b1)) {
                     bin.write_all(b"e").unwrap();
                     bin.write_all(&ms_i.to_le_bytes()).unwrap();
                     bin.write_all(&r.to_le_bytes()).unwrap();
