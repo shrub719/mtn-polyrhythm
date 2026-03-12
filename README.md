@@ -41,22 +41,22 @@ The rest of the file consists of **items** in the format `[code] [time] [argumen
 
 The following **items** are accepted by polyrhythm:
 
-- `t [time] [x]`: tap note.
+- `t [time] [x]`: tap note.  
   `[x]`: the x position of the note from 0.0 to 1.0.
 
-- `h [time] [x] [end time]`: hold note.
-  `[x]`: the x position of the note from 0.0 to 1.0.
+- `h [time] [x] [end time]`: hold note.  
+  `[x]`: the x position of the note from 0.0 to 1.0.  
   `[end time]`: the time value of the end of the hold note.
 
-- `e [time] [colour]`: background colour change.
+- `e [time] [colour]`: background colour change.  
   `[colour]`: a triplet of RGB values, e.g. `255 0 255` for magenta.
 
-- `e-fade [time] [start colour] [end colour] [n] [end time]`: background colour fade.
-  `[start colour]`: a triplet of RGB values; the colour to start the fade from.
-  `[end colour]`: a triplet of RGB values; the colour to fade to.
-  `[n]`: the number of colour changes to use when fading. A higher `n` results in a 
-  smoother fade, but possibly worse performance. Around 16 changs per second are recommended.
-  `[end time]`: the time when the fade should end.
+- `e-fade [time] [start colour] [end colour] [n] [end time]`: background colour fade.  
+  `[start colour]`: a triplet of RGB values; the colour to start the fade from.  
+  `[end colour]`: a triplet of RGB values; the colour to fade to.  
+  `[n]`: the number of colour changes to use when fading. A higher `n` results in a
+  smoother fade, but possibly worse performance. Around 16 changs per second are recommended.  
+  `[end time]`: the time when the fade should end.  
 
 Comments can be added by preceding a line with a `#`.
 
